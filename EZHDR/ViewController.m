@@ -108,8 +108,8 @@
 
 - (void)sampleBufferDidAnalyzeSampleWithDark:(CGFloat)dark light:(CGFloat)light;
 {
-    self.overBias =2;// light * 15.f;
-    self.underBias =2;// dark * 15.f;
+    self.overBias = light * 15.f;
+    self.underBias = dark * 15.f;
     self.biasLabel.text = [NSString stringWithFormat:@"-%0.2fEV/%0.2fEV", self.overBias, self.underBias];
 }
 
@@ -150,15 +150,17 @@
     
     if (!underexposed || !normal || !overexposed) { return; }
     
-    CGFloat radius = ((self.splitImageView.leftImage.size.width + self.splitImageView.leftImage.size.height) / 2.f) * 0.1;
+    CIImage *normalOriented = [normal imageByApplyingOrientation:kCGImagePropertyOrientationRight];
+    self.splitImageView.leftImage = [UIImage imageWithCIImage:normalOriented];
+
+    CGFloat radius = ((self.splitImageView.leftImage.size.width + self.splitImageView.leftImage.size.height) / 2.f) * 0.05;
     
     CIImage *underexposedMask = [underexposed.greyscaleImage boxBlurredWithRadius:radius].autoAdjustedImage;
     CIImage *overexposedMask = [overexposed.greyscaleImage.invertedImage boxBlurredWithRadius:radius].autoAdjustedImage;
     CIImage *intermediate = [normal blendedWithImage:underexposed mask:underexposedMask];
-    CIImage *final = [intermediate blendedWithImage:overexposed mask:overexposedMask];
-    
-    self.splitImageView.leftImage = [UIImage imageWithCIImage:normal];
-    self.splitImageView.rightImage = [UIImage imageWithCIImage:final.autoAdjustedImage];
+    CIImage *final = [intermediate blendedWithImage:overexposed mask:overexposedMask].autoAdjustedImage;
+    CIImage *finalOriented = [final imageByApplyingOrientation:kCGImagePropertyOrientationRight];
+    self.splitImageView.rightImage = [UIImage imageWithCIImage:finalOriented];
     self.splitImageView.hidden = NO;
     self.takeButton.enabled = YES;
 }
